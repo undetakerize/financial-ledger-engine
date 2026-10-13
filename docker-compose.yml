@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ledger-postgres
+    environment:
+      POSTGRES_DB: ledger_db
+      POSTGRES_USER: ledger_user
+      POSTGRES_PASSWORD: ledger_secret_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_ledger_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger_user -d ledger_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    container_name: ledger-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+    ports:
+      - "19092:19092"
+      - "9644:9644"
+    volumes:
+      - redpanda_ledger_data:/var/lib/redpanda/data
+
+volumes:
+  postgres_ledger_data:
+  redpanda_ledger_data:
